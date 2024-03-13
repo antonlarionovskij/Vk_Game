@@ -42,12 +42,13 @@ def task_handle(event, enter_message, message, random_id, a1,a2,a3,a4):
             #return output_message(None, event.chat_id, message, random_id, keyboard)
 
 # Вывод ответа бота для пользователя и чата
-def output_request(otvet):
+def output_request(otvet, sticker):
     if event.from_user:
      Lsvk.messages.send(
         user_id=event.user_id,
         chat_id=None,
         message=otvet,
+        sticker_id=sticker,
         random_id=get_random_id(),
         )
     if event.from_chat:
@@ -55,6 +56,7 @@ def output_request(otvet):
         user_id=None,
         chat_id=event.chat_id,
         message=otvet,
+         sticker_id=sticker,
         random_id=get_random_id(),
         )
 # Сообщения для пользователя или для чата
@@ -80,17 +82,22 @@ Lsvk.messages.send(
         )
 def total(num_questions, num_right_questions):
     if num_right_questions == 1:
-        output_request(f"Вы ответили на {num_right_questions} вопрос из {num_questions}")
+        output_request(f"Вы ответили на {num_right_questions} вопрос из {num_questions}",None)
     elif 2 <= num_right_questions <= 4:
-        output_request(f"Вы ответили на {num_right_questions} вопроса из {num_questions}")
+        output_request(f"Вы ответили на {num_right_questions} вопроса из {num_questions}",None)
     else:
-        output_request(f"Вы ответили на {num_right_questions} вопросов из {num_questions}")
-    output_request('"Игра" - войти в игру.\n"Завершить игру" - выйти из игры.')
+        output_request(f"Вы ответили на {num_right_questions} вопросов из {num_questions}",None)
+    if num_questions>=4 and 80.0<=(num_right_questions/num_questions*100)<=100.0:
+        output_request(random.choice(Lists.congratulations), None)
+        output_request(None,random.choice(Lists.congrat_sticks))
+    output_request('"Игра" - войти в игру.\n"Завершить игру" - выйти из игры.',None)
 
 # Работа
 for event in Lslongpoll.listen():
   if event.type == VkEventType.MESSAGE_NEW and event.to_me:
     if event.text == 'Игра':
+     output_request(f"Я буду задавать вопросы, на которые будут 4 варианта ответа.\nВыбери правильный ответ.", None)
+     output_request(f"Ну, погнали!",None)
      count = 0
      rights = 0
      questions = []
@@ -100,34 +107,31 @@ for event in Lslongpoll.listen():
      ans = True
      while ans == True:
         if questions == []:
-            output_request('Вопросы кончились')
+            output_request('Вопросы кончились',None)
             total(count, rights)
             break
-        variants = []
-        variants = variants+Lists.answers
         i = random.randrange(len(questions))
+        variants = []
+        variants = variants + answers[i]
         quest = questions[i]
-        right = answers[i]
+        right = variants[0]
         del questions[i]
         del answers[i]
-        variants.remove(right)
-        ans_to_out = [right]
-        ans_to_out = ans_to_out+variants
-        random.shuffle(ans_to_out)
-        task_handle(event, event.text, quest, get_random_id(), ans_to_out[0],ans_to_out[1],ans_to_out[2],ans_to_out[3])
+        random.shuffle(variants)
+        task_handle(event, event.text, quest, get_random_id(), variants[0],variants[1],variants[2],variants[3])
         for event in Lslongpoll.listen():
          if event.type == VkEventType.MESSAGE_NEW and event.to_me:
           if event.text == right or event.text[32:] == right:
-            output_request('Правильно')
+            output_request('Правильно',None)
             count += 1
             rights += 1
             break
           elif event.text == 'Завершить игру' or event.text[32:] == 'Завершить игру':
-            output_request('Игра завершена')
+            output_request('Игра завершена',None)
             total(count, rights)
             break
           elif event.text != right or event.text[32:] != right:
-            output_request('Неправильно')
+            output_request('Неправильно',None)
             count += 1
             break
         if event.text == 'Завершить игру' or event.text[32:] == 'Завершить игру':
