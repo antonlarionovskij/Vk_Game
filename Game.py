@@ -60,10 +60,39 @@ def output_request(otvet):
 # Сообщения для пользователя или для чата
 
 print('Бот запущен')
+Lsvk.messages.send(
+        user_id=773548672,
+        chat_id=None,
+        message='"Игра" - войти в игру.\n"Завершить игру" - выйти из игры.',
+        random_id=get_random_id(),
+        )
+Lsvk.messages.send(
+        user_id=None,
+        chat_id=1,
+        message='"Игра" - войти в игру.\n"Завершить игру" - выйти из игры.',
+        random_id=get_random_id(),
+        )
+Lsvk.messages.send(
+        user_id=None,
+        chat_id=2,
+        message='"Игра" - войти в игру.\n"Завершить игру" - выйти из игры.',
+        random_id=get_random_id(),
+        )
+def total(num_questions, num_right_questions):
+    if num_right_questions == 1:
+        output_request(f"Вы ответили на {num_right_questions} вопрос из {num_questions}")
+    elif 2 <= num_right_questions <= 4:
+        output_request(f"Вы ответили на {num_right_questions} вопроса из {num_questions}")
+    else:
+        output_request(f"Вы ответили на {num_right_questions} вопросов из {num_questions}")
+    output_request('"Игра" - войти в игру.\n"Завершить игру" - выйти из игры.')
+
 # Работа
 for event in Lslongpoll.listen():
   if event.type == VkEventType.MESSAGE_NEW and event.to_me:
     if event.text == 'Игра':
+     count = 0
+     rights = 0
      questions = []
      questions = questions+Lists.questions
      answers = []
@@ -72,6 +101,7 @@ for event in Lslongpoll.listen():
      while ans == True:
         if questions == []:
             output_request('Вопросы кончились')
+            total(count, rights)
             break
         variants = []
         variants = variants+Lists.answers
@@ -89,12 +119,16 @@ for event in Lslongpoll.listen():
          if event.type == VkEventType.MESSAGE_NEW and event.to_me:
           if event.text == right or event.text[32:] == right:
             output_request('Правильно')
+            count += 1
+            rights += 1
             break
           elif event.text == 'Завершить игру' or event.text[32:] == 'Завершить игру':
             output_request('Игра завершена')
+            total(count, rights)
             break
           elif event.text != right or event.text[32:] != right:
             output_request('Неправильно')
+            count += 1
             break
         if event.text == 'Завершить игру' or event.text[32:] == 'Завершить игру':
             break
