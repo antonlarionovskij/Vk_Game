@@ -80,16 +80,25 @@ Lsvk.messages.send(
         message='"Игра" - войти в игру.\n"Завершить игру" - выйти из игры.',
         random_id=get_random_id(),
         )
-def total(num_questions, num_right_questions):
+def total(num_right_questions):
     if num_right_questions == 1:
-        output_request(f"Вы ответили на {num_right_questions} вопрос из {num_questions}",None)
+        output_request(f"Вы ответили на {num_right_questions} вопрос из {len(Lists.questions)}",None)
     elif 2 <= num_right_questions <= 4:
-        output_request(f"Вы ответили на {num_right_questions} вопроса из {num_questions}",None)
+        output_request(f"Вы ответили на {num_right_questions} вопроса из {len(Lists.questions)}",None)
     else:
-        output_request(f"Вы ответили на {num_right_questions} вопросов из {num_questions}",None)
-    if num_questions>=4 and 80.0<=(num_right_questions/num_questions*100)<=100.0:
-        output_request(random.choice(Lists.congratulations), None)
-        output_request(None,random.choice(Lists.congrat_sticks))
+        output_request(f"Вы ответили на {num_right_questions} вопросов из {len(Lists.questions)}",None)
+    if num_right_questions / len(Lists.questions)*100 == 100.0:
+        output_request(random.choice(Lists.congratulations_100), None)
+        output_request(None, random.choice(Lists.congrat_sticks_100))
+    elif 80 <= num_right_questions / len(Lists.questions) * 100 < 100.0:
+        output_request(random.choice(Lists.congratulations_80_100), None)
+        output_request(None,random.choice(Lists.congrat_sticks_80_100))
+    elif 50 <= num_right_questions / len(Lists.questions) * 100 < 80.0:
+        output_request(random.choice(Lists.congratulations_50_80), None)
+    elif 25.0 <= num_right_questions / len(Lists.questions) * 100 <= 50.0:
+        output_request(random.choice(Lists.congratulations_25_50), None)
+    elif 0 <= num_right_questions / len(Lists.questions) * 100 < 25.0:
+        output_request(random.choice(Lists.congratulations_0_25), None)
     output_request('"Игра" - войти в игру.\n"Завершить игру" - выйти из игры.',None)
 
 # Работа
@@ -98,7 +107,6 @@ for event in Lslongpoll.listen():
     if event.text == 'Игра':
      output_request(f"Я буду задавать вопросы, на которые будут 4 варианта ответа.\nВыбери правильный ответ.", None)
      output_request(f"Ну, погнали!",None)
-     count = 0
      rights = 0
      questions = []
      questions = questions+Lists.questions
@@ -108,7 +116,7 @@ for event in Lslongpoll.listen():
      while ans == True:
         if questions == []:
             output_request('Вопросы кончились',None)
-            total(count, rights)
+            total(rights)
             break
         i = random.randrange(len(questions))
         variants = []
@@ -123,16 +131,14 @@ for event in Lslongpoll.listen():
          if event.type == VkEventType.MESSAGE_NEW and event.to_me:
           if event.text == right or event.text[32:] == right:
             output_request('Правильно',None)
-            count += 1
             rights += 1
             break
           elif event.text == 'Завершить игру' or event.text[32:] == 'Завершить игру':
             output_request('Игра завершена',None)
-            total(count, rights)
+            total(rights)
             break
           elif event.text != right or event.text[32:] != right:
             output_request('Неправильно',None)
-            count += 1
             break
         if event.text == 'Завершить игру' or event.text[32:] == 'Завершить игру':
             break
