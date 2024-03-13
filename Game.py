@@ -8,9 +8,7 @@ vk = vk_session.get_api()
 from vk_api.longpoll import VkLongPoll, VkEventType
 Lslongpoll = VkLongPoll(vk_session)
 Lsvk = vk_session.get_api()
-from random import shuffle
 from lists import Lists
-
 
 # Клавиатура
 def get_menu(label_1, label_2, label_3, label_4):
@@ -23,8 +21,8 @@ def get_menu(label_1, label_2, label_3, label_4):
     return keyboard.get_keyboard()
 
 
-# Вывод сообщения
-def output_message(user_id, chat_id, message, random_id, a1,a2,a3,a4):
+# Вывод задания
+def output_task(user_id, chat_id, message, random_id, a1,a2,a3,a4):
     Lsvk.messages.send(
         user_id=user_id,
         chat_id=chat_id,
@@ -33,24 +31,35 @@ def output_message(user_id, chat_id, message, random_id, a1,a2,a3,a4):
         keyboard=get_menu(a1,a2,a3,a4),
     )
 
-# Вывод ответа
-def output_request(user_id, chat_id, otvet):
+# Вывод задания для пользователя и чата
+def task_handle(event, enter_message, message, random_id, a1,a2,a3,a4):
+    if event.text == enter_message:
+        if event.from_user:
+            return output_task(event.user_id, None, message, random_id, a1,a2,a3,a4)
+            #return output_message(event.user_id, None, message, random_id, keyboard)
+        elif event.from_chat:
+            return output_task(None, event.chat_id, message, random_id, a1,a2,a3,a4)
+            #return output_message(None, event.chat_id, message, random_id, keyboard)
+
+# Вывод ответа бота для пользователя и чата
+def output_request(otvet):
+    if event.from_user:
      Lsvk.messages.send(
-        user_id=user_id,
-        chat_id=chat_id,
+        user_id=event.user_id,
+        chat_id=None,
+        message=otvet,
+        random_id=get_random_id(),
+        )
+    if event.from_chat:
+     Lsvk.messages.send(
+        user_id=None,
+        chat_id=event.chat_id,
         message=otvet,
         random_id=get_random_id(),
         )
 # Сообщения для пользователя или для чата
-def message_handle(event, enter_message, message, random_id, a1,a2,a3,a4):
-    if event.text == enter_message:
-        if event.from_user:
-            return output_message(event.user_id, None, message, random_id, a1,a2,a3,a4)
-            #return output_message(event.user_id, None, message, random_id, keyboard)
-        elif event.from_chat:
-            return output_message(None, event.chat_id, message, random_id, a1,a2,a3,a4)
-            #return output_message(None, event.chat_id, message, random_id, keyboard)
 
+print('Бот запущен')
 # Работа
 for event in Lslongpoll.listen():
   if event.type == VkEventType.MESSAGE_NEW and event.to_me:
@@ -62,15 +71,10 @@ for event in Lslongpoll.listen():
      ans = True
      while ans == True:
         if questions == []:
-            if event.from_user:
-                output_request(event.user_id, None, 'Вопросы кончились')
-                break
-            if event.from_chat:
-                output_request(None, event.chat_id, 'Вопросы кончились')
-                break
+            output_request('Вопросы кончились')
+            break
         variants = []
         variants = variants+Lists.answers
-        print(Lists.answers)
         i = random.randrange(len(questions))
         quest = questions[i]
         right = answers[i]
@@ -79,26 +83,22 @@ for event in Lslongpoll.listen():
         variants.remove(right)
         ans_to_out = [right]
         ans_to_out = ans_to_out+variants
-        shuffle(ans_to_out)
-        message_handle(event, event.text, quest, get_random_id(), ans_to_out[0],ans_to_out[1],ans_to_out[2],ans_to_out[3])
+        random.shuffle(ans_to_out)
+        task_handle(event, event.text, quest, get_random_id(), ans_to_out[0],ans_to_out[1],ans_to_out[2],ans_to_out[3])
         for event in Lslongpoll.listen():
          if event.type == VkEventType.MESSAGE_NEW and event.to_me:
-          if event.text == right and event.from_user:
-            output_request(event.user_id, None, 'Правильно')
-            ans = True
+          if event.text == right or event.text[32:] == right:
+            output_request('Правильно')
             break
-          elif event.text != right and event.from_user:
-            output_request(event.user_id, None, 'Неправильно')
-            ans = False
+          elif event.text == 'Завершить игру' or event.text[32:] == 'Завершить игру':
+            output_request('Игра завершена')
             break
-          if event.text[32:] == right and event.from_chat:
-            output_request(None, event.chat_id, 'Правильно')
-            ans = True
+          elif event.text != right or event.text[32:] != right:
+            output_request('Неправильно')
             break
-          elif event.text[32:] != right and event.from_chat:
-            output_request(None, event.chat_id, 'Неправильно')
-            ans = False
+        if event.text == 'Завершить игру' or event.text[32:] == 'Завершить игру':
             break
+
 
 
 
