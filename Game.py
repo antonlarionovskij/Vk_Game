@@ -83,7 +83,7 @@ Lsvk.messages.send(
 
 # Подведение итогов
 def total(num_right_questions, enter_questions, hints):
-    output_request(f"Вы ответили на {num_right_questions} вопросов из {enter_questions}\nПодсказок использовано: {3-hints}", None, None)
+    output_request(f"Вы ответили на {num_right_questions} вопросов из {enter_questions}\nПодсказок использовано: {3-hints}", None, VkKeyboard.get_empty_keyboard())
     if num_right_questions / enter_questions*100 == 100.0 and hints == 3:
         output_request(random.choice(Lists.congratulations_100), None, None)
         output_request(None, random.choice(Lists.congrat_sticks_100), None)
@@ -112,7 +112,6 @@ for event in Lslongpoll.listen():
      inita = inita + Lists.answers
      questions = []
      answers = []
-     print(len(initq))
      for j in range(15):
       k = random.randrange(len(initq))
       questions.append(initq[k])
@@ -129,7 +128,6 @@ for event in Lslongpoll.listen():
             del questions
             del answers
             del variants
-            output_request(f"Вопросы кончились", None, VkKeyboard.get_empty_keyboard())
             total(right_answers_count, num_questions, hint)
             break
         i = random.randrange(len(questions))
