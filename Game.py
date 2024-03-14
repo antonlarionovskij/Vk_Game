@@ -1,18 +1,18 @@
-import random, vk_api, copy, vk, bs4, requests, os
+import random, vk_api  # copy, vk, bs4, requests, os
 from vk_api.keyboard import VkKeyboard, VkKeyboardColor
 from vk_api.utils import get_random_id
-vk_session = vk_api.VkApi(token = "vk1.a.CTTFMK9FAqi30OEbycat_ukNTOYp93w22GiV3CFaZodr6E1EWYTKN6nx7N-FZV1oDbm-1y9F20T1QD6oyXRiSKB9vsG9-Ui6jWde0DbwpsBMqXnzLtEyNAxdyAlSOm1hdVB0Ix5Mygxhh8my-nGW5dS063w3N60so2RJZPN43B6IJKPj6f0CpSe9e3uvE1iFVqzMaebofiB8OjrtaAJmHQ")
-from vk_api.bot_longpoll import VkBotLongPoll, VkBotEventType
+from vk_api.bot_longpoll import VkBotLongPoll  # VkBotEventType
+from vk_api.longpoll import VkLongPoll, VkEventType
+from lists import Lists
+vk_session = vk_api.VkApi(token="vk1.a.CTTFMK9FAqi30OEbycat_ukNTOYp93w22GiV3CFaZodr6E1EWYTKN6nx7N-FZV1oDbm-1y9F20T1QD6oyXRiSKB9vsG9-Ui6jWde0DbwpsBMqXnzLtEyNAxdyAlSOm1hdVB0Ix5Mygxhh8my-nGW5dS063w3N60so2RJZPN43B6IJKPj6f0CpSe9e3uvE1iFVqzMaebofiB8OjrtaAJmHQ")
 longpoll = VkBotLongPoll(vk_session, 224992987)
 vk = vk_session.get_api()
-from vk_api.longpoll import VkLongPoll, VkEventType
 Lslongpoll = VkLongPoll(vk_session)
 Lsvk = vk_session.get_api()
-from lists import Lists
 
 # Клавиатура
-def get_menu(label_1, label_2, label_3, label_4):
-    keyboard = VkKeyboard(one_time=True)
+def get_menu(one_time, label_1, label_2, label_3, label_4):
+    keyboard = VkKeyboard(one_time=one_time)
     keyboard.add_button(label_1, color=VkKeyboardColor.SECONDARY)
     keyboard.add_button(label_2, color=VkKeyboardColor.SECONDARY)
     keyboard.add_line()
@@ -21,102 +21,116 @@ def get_menu(label_1, label_2, label_3, label_4):
     return keyboard.get_keyboard()
 
 
-# Вывод задания
-def output_task(user_id, chat_id, message, random_id, a1,a2,a3,a4):
+# Вывод задания и вариантов ответа на кнопках
+def output_task(user_id, chat_id, message, random_id, a1, a2, a3, a4):
     Lsvk.messages.send(
         user_id=user_id,
         chat_id=chat_id,
         message=message,
         random_id=random_id,
-        keyboard=get_menu(a1,a2,a3,a4),
+        keyboard=get_menu(False, a1, a2, a3, a4),
     )
 
 # Вывод задания для пользователя и чата
-def task_handle(event, enter_message, message, random_id, a1,a2,a3,a4):
-    if event.text == enter_message:
-        if event.from_user:
-            return output_task(event.user_id, None, message, random_id, a1,a2,a3,a4)
-            #return output_message(event.user_id, None, message, random_id, keyboard)
-        elif event.from_chat:
-            return output_task(None, event.chat_id, message, random_id, a1,a2,a3,a4)
-            #return output_message(None, event.chat_id, message, random_id, keyboard)
+def task_handle(vk_event, enter_message, message, random_id, a1, a2, a3, a4):
+    if vk_event.text == enter_message:
+        if vk_event.from_user:
+            return output_task(vk_event.user_id, None, message, random_id, a1, a2, a3, a4)
+        elif vk_event.from_chat:
+            return output_task(None, vk_event.chat_id, message, random_id, a1, a2, a3, a4)
 
 # Вывод ответа бота для пользователя и чата
-def output_request(otvet, sticker):
+def output_request(otvet, sticker, keyboard):
     if event.from_user:
-     Lsvk.messages.send(
-        user_id=event.user_id,
-        chat_id=None,
-        message=otvet,
-        sticker_id=sticker,
-        random_id=get_random_id(),
-        )
-    if event.from_chat:
-     Lsvk.messages.send(
-        user_id=None,
-        chat_id=event.chat_id,
-        message=otvet,
+        Lsvk.messages.send(
+         user_id=event.user_id,
+         chat_id=None,
+         message=otvet,
          sticker_id=sticker,
-        random_id=get_random_id(),
-        )
-# Сообщения для пользователя или для чата
+         random_id=get_random_id(),
+         keyboard=keyboard
+         )
+    if event.from_chat:
+        Lsvk.messages.send(
+         user_id=None,
+         chat_id=event.chat_id,
+         message=otvet,
+         sticker_id=sticker,
+         random_id=get_random_id(),
+         keyboard=keyboard
+          )
 
+# Сообщения для пользователя и для чата в начале работы бота
 print('Бот запущен')
 Lsvk.messages.send(
         user_id=773548672,
         chat_id=None,
-        message='"Игра" - войти в игру.\n"Завершить игру" - выйти из игры.',
+        message='"Игра" - войти в игру.',
         random_id=get_random_id(),
         )
 Lsvk.messages.send(
         user_id=None,
         chat_id=1,
-        message='"Игра" - войти в игру.\n"Завершить игру" - выйти из игры.',
+        message='"Игра" - войти в игру.',
         random_id=get_random_id(),
         )
 Lsvk.messages.send(
         user_id=None,
         chat_id=2,
-        message='"Игра" - войти в игру.\n"Завершить игру" - выйти из игры.',
+        message='"Игра" - войти в игру.',
         random_id=get_random_id(),
         )
-def total(num_right_questions):
-    if num_right_questions == 1:
-        output_request(f"Вы ответили на {num_right_questions} вопрос из {len(Lists.questions)}",None)
-    elif 2 <= num_right_questions <= 4:
-        output_request(f"Вы ответили на {num_right_questions} вопроса из {len(Lists.questions)}",None)
-    else:
-        output_request(f"Вы ответили на {num_right_questions} вопросов из {len(Lists.questions)}",None)
-    if num_right_questions / len(Lists.questions)*100 == 100.0:
-        output_request(random.choice(Lists.congratulations_100), None)
-        output_request(None, random.choice(Lists.congrat_sticks_100))
-    elif 80 <= num_right_questions / len(Lists.questions) * 100 < 100.0:
-        output_request(random.choice(Lists.congratulations_80_100), None)
-        output_request(None,random.choice(Lists.congrat_sticks_80_100))
-    elif 50 <= num_right_questions / len(Lists.questions) * 100 < 80.0:
-        output_request(random.choice(Lists.congratulations_50_80), None)
-    elif 25.0 <= num_right_questions / len(Lists.questions) * 100 <= 50.0:
-        output_request(random.choice(Lists.congratulations_25_50), None)
-    elif 0 <= num_right_questions / len(Lists.questions) * 100 < 25.0:
-        output_request(random.choice(Lists.congratulations_0_25), None)
-    output_request('"Игра" - войти в игру.\n"Завершить игру" - выйти из игры.',None)
+
+# Подведение итогов
+def total(num_right_questions, enter_questions, hints):
+    output_request(f"Вы ответили на {num_right_questions} вопросов из {enter_questions}\nПодсказок использовано: {3-hints}", None, None)
+    if num_right_questions / enter_questions*100 == 100.0 and hints == 3:
+        output_request(random.choice(Lists.congratulations_100), None, None)
+        output_request(None, random.choice(Lists.congrat_sticks_100), None)
+    elif (80.0 < num_right_questions / enter_questions * 100 <= 100 and hints < 3) or (80.0 < num_right_questions / enter_questions * 100 < 100 and hints <= 3):
+        output_request(random.choice(Lists.congratulations_80_100), None, None)
+        output_request(None, random.choice(Lists.congrat_sticks_80_100), None)
+    elif 50.0 < num_right_questions / enter_questions * 100 <= 80:
+        output_request(random.choice(Lists.congratulations_50_80), None, None)
+    elif 25.0 < num_right_questions / enter_questions * 100 <= 50:
+        output_request(random.choice(Lists.congratulations_25_50), None, None)
+    elif 0.0 <= num_right_questions / enter_questions * 100 <= 25:
+        output_request(random.choice(Lists.congratulations_0_25), None, None)
+    output_request('"Игра" - войти в игру.', None, None)
 
 # Работа
 for event in Lslongpoll.listen():
   if event.type == VkEventType.MESSAGE_NEW and event.to_me:
     if event.text == 'Игра':
-     output_request(f"Я буду задавать вопросы, на которые будут 4 варианта ответа.\nВыбери правильный ответ.", None)
-     output_request(f"Ну, погнали!",None)
-     rights = 0
+     output_request(f"Я буду задавать вопросы, на которые будут 4 варианта ответа.\nВыберите правильный ответ.\nДля подсказки введите 'Подсказка'.", None, None)
+     output_request(f"Всего будет 15 вопросов и 3 подсказки.\nПогнали!", None, None)
+     right_answers_count = 0
+     questions_count = 0
+     initq = []
+     initq = initq + Lists.questions
+     inita = []
+     inita = inita + Lists.answers
      questions = []
-     questions = questions+Lists.questions
      answers = []
-     answers = answers+Lists.answers
-     ans = True
-     while ans == True:
+     print(len(initq))
+     for j in range(15):
+      k = random.randrange(len(initq))
+      questions.append(initq[k])
+      answers.append(inita[k])
+      del initq[k]
+      del inita[k]
+      j += 1
+     del initq
+     del inita
+     num_questions = len(questions)
+     hint = 3
+     while True:
         if questions == []:
-            output_request('Вопросы кончились',None)
-            total(rights)
+            del questions
+            del answers
+            del variants
+            output_request(f"Вопросы кончились", None, VkKeyboard.get_empty_keyboard())
+            total(right_answers_count, num_questions, hint)
             break
         i = random.randrange(len(questions))
         variants = []
@@ -126,26 +140,27 @@ for event in Lslongpoll.listen():
         del questions[i]
         del answers[i]
         random.shuffle(variants)
-        task_handle(event, event.text, quest, get_random_id(), variants[0],variants[1],variants[2],variants[3])
+        questions_count += 1
+        task_handle(event, event.text, f"Вопрос № {questions_count}:\n{quest}", get_random_id(), variants[0], variants[1], variants[2], variants[3])
         for event in Lslongpoll.listen():
          if event.type == VkEventType.MESSAGE_NEW and event.to_me:
           if event.text == right or event.text[32:] == right:
-            output_request('Правильно',None)
-            rights += 1
+            output_request(random.choice(Lists.ans_right), None, None)
+            right_answers_count += 1
             break
-          elif event.text == 'Завершить игру' or event.text[32:] == 'Завершить игру':
-            output_request('Игра завершена',None)
-            total(rights)
-            break
-          elif event.text != right or event.text[32:] != right:
-            output_request('Неправильно',None)
+          elif event.text == 'Подсказка' or event.text[32:] == 'Подсказка':
+            if hint > 0:
+                hint -= 1
+                hint_variants = []
+                hint_variants = hint_variants + variants
+                hint_variants.remove(right)
+                random.shuffle(hint_variants)
+                output_request(f"Неправильные ответы: {hint_variants[0]}, {hint_variants[1]}\nПодсказок осталось: {hint} ", None, None)
+                del hint_variants
+            else:
+                output_request(f"Вы уже воспользовались подсказками!", None, None)
+          elif event.text != right and event.text != 'Подсказка' or event.text[32:] != right and event.text[32:] != 'Подсказка':
+            output_request(random.choice(Lists.ans_wrong), None, None)
             break
         if event.text == 'Завершить игру' or event.text[32:] == 'Завершить игру':
             break
-
-
-
-
-
-
-
