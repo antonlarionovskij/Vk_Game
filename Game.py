@@ -211,7 +211,15 @@ for event in Lslongpoll.listen():          # Инициируем цикл ра�
                             hint_variants_b = hint_variants_b + vars_to_out  # Записываем в него список всех выводимых ответов
                             hint_variants_b.remove(right)  # Убираем из него правильный ответ
                             hint_variants_b.append(right)  # Добавляем правильный ответ в конец. Он будет hint_variants_b[3]
-                            friend = hint_variants_b[3] if secrets.randbelow(100) < 75 else random.choice([hint_variants_b[0], hint_variants_b[1], hint_variants_b[2]])  # С вероятностью в 75% выпадет правильный ответ
+                            if '-' in hint_variants_b:     # Если была использована подсказка -2 ответа, просим выбирать друга из оставшихся ответов
+                                hint_variants_b = list(set(hint_variants_b))
+                                hint_variants_b.remove('-')
+                                hint_variants_b.remove(right)
+                                hint_variants_b.append(right)
+                            if len(hint_variants_b) == 2:
+                                friend = hint_variants_b[1] if random.random() < 0.75 else hint_variants_b[0]
+                            else:
+                                friend = hint_variants_b[3] if secrets.randbelow(100) < 75 else random.choice([hint_variants_b[0], hint_variants_b[1], hint_variants_b[2]])  # С вероятностью в 75% выпадет правильный ответ
                             output_request(f"Друг считает, что правильный ответ - {friend}", None, get_menu(vars_to_out[0], vars_to_out[1], vars_to_out[2], vars_to_out[3]))  # "Держи 2 неверных ответа)))"
                             del hint_variants_b  # Прибираемся за собой
                             del friend
@@ -226,11 +234,26 @@ for event in Lslongpoll.listen():          # Инициируем цикл ра�
                             vars_to_out.remove(right)
                             random.shuffle(vars_to_out)
                             if secrets.randbelow(100) < 75:                                                      # C 75-процентной вероятностью правильный ответ будет на первом месте
-                                hint_variants_c = [right, vars_to_out[0], vars_to_out[1], vars_to_out[2]]
-                                vars_to_out = hint_variants_c
+                                if '-' in vars_to_out:
+                                    vars_to_out = list(set(vars_to_out))
+                                    vars_to_out.remove('-')
+                                    vars_to_out.insert(0, right)
+                                    vars_to_out.append('-')
+                                    vars_to_out.append('-')
+                                else:
+                                    hint_variants_c = [right, vars_to_out[0], vars_to_out[1], vars_to_out[2]]
+                                    vars_to_out = hint_variants_c
                             else:
                                 vars_to_out.append(right)                                                        # Хотя еще накидывается 25% от оставшихся 25%
-                                random.shuffle(vars_to_out)
+                                if '-' in vars_to_out:
+                                    vars_to_out = list(set(vars_to_out))
+                                    vars_to_out.remove('-')
+                                    vars_to_out.remove(right)
+                                    vars_to_out.insert(1, right)
+                                    vars_to_out.append('-')
+                                    vars_to_out.append('-')
+                                else:
+                                    random.shuffle(vars_to_out)
                             output_request('После голосования порядок ответов изменился (с большей долей вероятности правильный ответ - на первой кнопке)',None, get_menu(vars_to_out[0], vars_to_out[1], vars_to_out[2], vars_to_out[3]))  # "Держи 2 неверных ответа)))"
                             del hint_variants_c
                             break
