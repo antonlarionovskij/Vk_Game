@@ -1,4 +1,4 @@
-import random, vk_api  # copy, vk, bs4, requests, os
+import random, vk_api, secrets  # copy, vk, bs4, requests, os
 from vk_api.keyboard import VkKeyboard, VkKeyboardColor
 from vk_api.utils import get_random_id
 from vk_api.bot_longpoll import VkBotLongPoll  # VkBotEventType
@@ -12,19 +12,29 @@ Lsvk = vk_session.get_api()
 
 def user_name(user_id):
     user = vk_session.method("users.get", {"user_ids": user_id})  # вместо 1 подставляете айди нужного юзера
-    return user[0]['first_name'] + ' ' + user[0]['last_name']
+    return user[0]['first_name'] #+ ' ' + user[0]['last_name'] # Нам нужно только имя
 
-# Клавиатура
+# Клавиатура основная
 def get_menu(label_1, label_2, label_3, label_4):
     keyboard = VkKeyboard(one_time=False)
     keyboard.add_button('Подсказка', color=VkKeyboardColor.POSITIVE)
-    keyboard.add_button('Завершить игру', color=VkKeyboardColor.NEGATIVE)
+    keyboard.add_button('Забрать деньги', color=VkKeyboardColor.NEGATIVE)
     keyboard.add_line()
     keyboard.add_button(label_1, color=VkKeyboardColor.SECONDARY)
     keyboard.add_button(label_2, color=VkKeyboardColor.SECONDARY)
     keyboard.add_line()
     keyboard.add_button(label_3, color=VkKeyboardColor.SECONDARY)
     keyboard.add_button(label_4, color=VkKeyboardColor.SECONDARY)
+    return keyboard.get_keyboard()
+
+# Клавиатура подсказок
+def get_hints():
+    keyboard = VkKeyboard(one_time=False)
+    keyboard.add_button('Убрать 2 неверных ответа', color=VkKeyboardColor.POSITIVE)
+    keyboard.add_line()
+    keyboard.add_button('Звонок другу', color=VkKeyboardColor.POSITIVE)
+    keyboard.add_line()
+    keyboard.add_button('Помощь зала', color=VkKeyboardColor.POSITIVE)
     return keyboard.get_keyboard()
 
 
@@ -96,20 +106,14 @@ def is_empty(l):
     return all(is_empty(i) if isinstance(i, list) else False for i in l)
 
 # Подведение итогов
-def total(num_right_questions, enter_questions, hints):
-    output_request(f"Вы ответили на {num_right_questions} вопросов из {enter_questions}\nПодсказок использовано: {3-hints}", None, VkKeyboard.get_empty_keyboard())
-    if num_right_questions / enter_questions*100 == 100.0 and hints == 3:
+def total(hints_a, hints_b, hints_c):
+    if hints_a == 1 and hints_b == 1 and hints_c == 1:
         output_request(random.choice(Lists.congratulations_100), None, None)
         output_request(None, random.choice(Lists.congrat_sticks_100), None)
-    elif (80.0 < num_right_questions / enter_questions * 100 <= 100 and hints < 3) or (80.0 < num_right_questions / enter_questions * 100 < 100 and hints <= 3):
+    else:
         output_request(random.choice(Lists.congratulations_80_100), None, None)
         output_request(None, random.choice(Lists.congrat_sticks_80_100), None)
-    elif 50.0 < num_right_questions / enter_questions * 100 <= 80:
-        output_request(random.choice(Lists.congratulations_50_80), None, None)
-    elif 25.0 < num_right_questions / enter_questions * 100 <= 50:
-        output_request(random.choice(Lists.congratulations_25_50), None, None)
-    elif 0.0 <= num_right_questions / enter_questions * 100 <= 25:
-        output_request(random.choice(Lists.congratulations_0_25), None, None)
+    output_request(Lists.all_farewells(user_name(event.user_id)), None, None)
     init_message(event.user_id)
 
 print('Бот запущен')
@@ -120,8 +124,7 @@ for event in Lslongpoll.listen():          # Инициируем цикл ра�
   if event.type == VkEventType.MESSAGE_NEW and event.to_me and event.text:
     if event.text == 'Игра':               # "Бот, давай поиграем!)"
      output_request(Lists.all_greatings(user_name(event.user_id)), None, None)    # Бот приветствует тебя!
-     output_request(f"Я буду задавать вопросы, на которые будут 4 варианта ответа.\nВыберите правильный ответ.", None, None)  # Выводим вступительные сообщения (см. def output request)
-     output_request(f"Всего будет 15 вопросов и 3 подсказки.\nПогнали!", None, None)
+     output_request(f"Я буду задавать вопросы, на которые будут 4 варианта ответа.\nВыберите правильный ответ.\n\nВсего будет 15 вопросов и 3 подсказки.\nПогнали!", None, None)  # Выводим вступительные сообщения (см. def output request)
      right_answers_count = 0               # Счетчик правильных ответов
      questions_count = 0                   # Счетчик заданных вопросов (используется в выводе "Вопрос №_")
      initq = []                            # Инициируем/обнуляем общий список вопросов
@@ -140,13 +143,16 @@ for event in Lslongpoll.listen():          # Инициируем цикл ра�
      del initq                             # Удаляем общий список вопросов без выбранных в игру
      del inita                             # Удаляем общий список вариантов ответов без выбранных в игру
      num_questions = len(questions)        # Количество вопросов в игре
-     hint = 3                              # Количество подсказок за игру (3)
+     hint_a = 1                              # Количество подсказок за игру (3)
+     hint_b = 1
+     hint_c = 1
+     sum = 0                               # Количество выигранных денег (до начала игры - 0)
      while True:                           # Игра началась (инициируем цикл игры)
+        break_out_flag = False  # Если отвечаем неправильно, этот флаг становится True и происходит выход из цикла игры
         if is_empty(questions):            # Если закончились вопросы (список вопросов пуст - см. def is_empty()), то чистим за собой все оставшиеся списки и выводим итог (см. def total) и выходим из цикла игры
-            del questions
-            del answers
+            answers = []
             del vars_to_out
-            total(right_answers_count, num_questions, hint)   # Выводим итог (см. def total)
+            total(hint_a, hint_b, hint_c)                      # Выводим итог (см. def total)
             break
         i = random.randrange(len(questions)) # Случайным образом выбираем номер соответствия (вопрос-варианты ответа) из 15 вопросов-вариантов ответов
         variants = []                        # Инициируем/обнуляем список ответов по номеру выбранного соответствия
@@ -169,29 +175,87 @@ for event in Lslongpoll.listen():          # Инициируем цикл ра�
         for event in Lslongpoll.listen():                                 # Инициируем цикл ответа на вопрос
          if event.type == VkEventType.MESSAGE_NEW and event.to_me and event.text:
           if event.text == right or event.text[32:] == right:             # Отвечаем верно (также чистим наш ответ от служебной информации - для чатов)
-            output_request(random.choice(Lists.ans_right), None, None)    # Выводим случайное одобрение (см. список ans_rigt в файле lists.py)
             right_answers_count += 1                                      # Наращиваем счетчик правильных ответов на 1
+            sum = Lists.points[right_answers_count]
+            if sum == 5000:
+                output_request(f"{random.choice(Lists.ans_right)}\nУ Вас первая несгораемая сумма в {sum} рублей.", None, None)
+            elif sum == 100000:
+                output_request(f"{random.choice(Lists.ans_right)}\nУ Вас вторая несгораемая сумма в {sum} рублей.", None, None)
+            else:
+                output_request(f"{random.choice(Lists.ans_right)}\nУ Вас {sum} рублей.", None, None)  # Выводим случайное одобрение (см. список ans_rigt в файле lists.py)
             break                                                         # Выходим из цикла ответа на вопрос
           elif event.text == 'Подсказка' or event.text[32:] == 'Подсказка':    # "Ботик, родненький, подскажи, пожалуйста!!!"
-            if hint > 0:                                                  # "ОК, но у тебя {hint} попыток!"
-                hint -= 1                                                 # Осталось {hint-1} попыток
-                hint_variants = []                                        # Инициируем/обнуляем список выводимых ответов, за исключением правильного
-                hint_variants = hint_variants + vars_to_out               # Записываем в него список всех выводимых ответов
-                hint_variants.remove(right)                               # Убираем из него правильный ответ
-                random.shuffle(hint_variants)                             # Затем его перемешаем
-                output_request(f"Неправильные ответы: {hint_variants[0]}, {hint_variants[1]}\nПодсказок осталось: {hint} ", None, None)  # "Держи 2 неверных ответа)))"
-                del hint_variants                                         # Прибираемся за собой
-            else:                                                         # "А попытки-то закончились!"
-                output_request(f"Вы уже воспользовались подсказками!", None, None)   # "Хрен тебе, а не подсказка!))"
-          elif event.text == 'Завершить игру' or event.text[32:] == 'Завершить игру': # "Хочешь выйти из игры?"
-            del questions                                                 # Немного прибираемся
+            output_request('Выберите подсказку:', None, get_hints())
+            for event in Lslongpoll.listen():  # Инициируем цикл выбора подсказки
+                if event.type == VkEventType.MESSAGE_NEW and event.to_me and event.text:
+                    if event.text == 'Убрать 2 неверных ответа' or event.text[32:] == 'Убрать 2 неверных ответа':
+                        if hint_a > 0:                                                # "ОК, но у тебя {hint} попыток!"
+                            hint_a -= 1                                               # Осталось {hint-1} попыток
+                            hint_variants_a = []                                      # Инициируем/обнуляем список выводимых ответов, за исключением правильного
+                            hint_variants_a = hint_variants_a + vars_to_out           # Записываем в него список всех выводимых ответов
+                            hint_variants_a.remove(right)                               # Убираем из него правильный ответ
+                            random.shuffle(hint_variants_a)                             # Затем его перемешаем
+                            for i in range(4):
+                                if vars_to_out[i] == hint_variants_a[0] or vars_to_out[i] == hint_variants_a[1]:
+                                    vars_to_out[i] = '-'
+                            output_request('Убраны 2 неверных ответа', None, get_menu(vars_to_out[0], vars_to_out[1], vars_to_out[2], vars_to_out[3]))  # "Держи 2 неверных ответа)))"
+                            del hint_variants_a                                         # Прибираемся за собой
+                            break
+                        else:                                                         # "А попытки-то закончились!"
+                            output_request('Вы уже воспользовались данной подсказкой!', None, get_menu(vars_to_out[0], vars_to_out[1], vars_to_out[2], vars_to_out[3]))   # "Хрен тебе, а не подсказка!))"
+                            break
+                    if event.text == 'Звонок другу' or event.text[32:] == 'Звонок другу':
+                        if hint_b > 0:
+                            hint_b -= 1  # Осталось {hint-1} попыток
+                            hint_variants_b = []  # Инициируем/обнуляем список выводимых ответов, за исключением правильного
+                            hint_variants_b = hint_variants_b + vars_to_out  # Записываем в него список всех выводимых ответов
+                            hint_variants_b.remove(right)  # Убираем из него правильный ответ
+                            hint_variants_b.append(right)  # Добавляем правильный ответ в конец. Он будет hint_variants_b[3]
+                            friend = hint_variants_b[3] if secrets.randbelow(100) < 75 else random.choice([hint_variants_b[0], hint_variants_b[1], hint_variants_b[2]])  # С вероятностью в 75% выпадет правильный ответ
+                            output_request(f"Друг считает, что правильный ответ - {friend}", None, get_menu(vars_to_out[0], vars_to_out[1], vars_to_out[2], vars_to_out[3]))  # "Держи 2 неверных ответа)))"
+                            del hint_variants_b  # Прибираемся за собой
+                            del friend
+                            break
+                        else:  # "А попытки-то закончились!"
+                            output_request('Вы уже воспользовались данной подсказкой!', None, get_menu(vars_to_out[0], vars_to_out[1], vars_to_out[2], vars_to_out[3]))  # "Хрен тебе, а не подсказка!))"
+                            break
+                    if event.text == 'Помощь зала' or event.text[32:] == 'Помощь зала':
+                        if hint_c > 0:
+                            hint_c -= 1  # Осталось {hint-1} попыток
+                            hint_variants_c = []
+                            vars_to_out.remove(right)
+                            random.shuffle(vars_to_out)
+                            if secrets.randbelow(100) < 75:                                                      # C 75-процентной вероятностью правильный ответ будет на первом месте
+                                hint_variants_c = [right, vars_to_out[0], vars_to_out[1], vars_to_out[2]]
+                                vars_to_out = hint_variants_c
+                            else:
+                                vars_to_out.append(right)                                                        # Хотя еще накидывается 25% от оставшихся 25%
+                                random.shuffle(vars_to_out)
+                            output_request('После голосования порядок ответов изменился (с большей долей вероятности правильный ответ - на первой кнопке)',None, get_menu(vars_to_out[0], vars_to_out[1], vars_to_out[2], vars_to_out[3]))  # "Держи 2 неверных ответа)))"
+                            del hint_variants_c
+                            break
+                        else:  # "А попытки-то закончились!"
+                            output_request('Вы уже воспользовались данной подсказкой!', None, get_menu(vars_to_out[0], vars_to_out[1], vars_to_out[2], vars_to_out[3]))  # "Хрен тебе, а не подсказка!))"
+                            break
+          elif event.text == 'Забрать деньги' or event.text[32:] == 'Забрать деньги': # "Хочешь выйти из игры?"
+            output_request(Lists.get_ans_commit(sum), None, VkKeyboard.get_empty_keyboard()) # Выводим сообщение о завершении игры и прячем клаву
+            init_message(event.user_id)                                   # Выводим вступительное сообщение пользователю и в чаты (без клавы)
+            break_out_flag = True
+            break                                                         # Выходим из цикла ответа на вопрос
+          elif event.text == '-' or event.text[32:] == '-':               # На убранный ответ не реагируем
+              continue
+          elif (event.text in [vars_to_out[0], vars_to_out[1], vars_to_out[2], vars_to_out[3]] and event.text != right) or (event.text[32:] in [vars_to_out[0], vars_to_out[1], vars_to_out[2], vars_to_out[3]] and event.text[32:] != right):
+            sum = 0 if sum < 5000 else 5000 if 5000 <= sum < 100000 else 100000 if 100000 <= sum < 3000000 else 3000000    # Остается только та несгораемая сумма, до которой вы дошли
+            output_request(f"{Lists.get_ans_wrong(right)}\nВы выиграли {sum} рублей.", None, None)    # "Осуждаю!"   (см. список осуждений ans_wrong из файла lists.py)
+            init_message(event.user_id)
+            break_out_flag = True
+            break                                                         # Выходим из цикла ответа на вопрос
+        if break_out_flag == True:  # "Хочешь выйти из игры? Ставим это же условие в цикле уровнем выше, чтобы..."
+            del sum
+            del hint_a
+            del hint_b
+            del hint_c
+            del questions
             del answers
             del vars_to_out
-            output_request('Не хотите продолжать? Ну что ж, хозяин-барин.\nА с вами был Экзаменатор! До новых встреч!', None, VkKeyboard.get_empty_keyboard()) # Выводим сообщение о завершении игры и прячем клаву
-            init_message(event.user_id)                                   # Выводим вступительное сообщение пользователю и в чаты (без клавы)
-            break                                                         # Выходим из цикла ответа на вопрос
-          elif event.text not in [str(right), 'Подсказка', 'Завершить игру'] or event.text[32:] not in [str(right), 'Подсказка', 'Завершить игру']: # Сморозил что-то невнятное (сюда же входит и неверный ответ, но не входит запрос подсказки или просьба о завершении игры)
-            output_request(random.choice(Lists.ans_wrong), None, None)    # "Осуждаю!"   (см. список осуждений ans_wrong из файла lists.py)
-            break                                                         # Выходим из цикла ответа на вопрос
-        if event.text == 'Завершить игру' or event.text[32:] == 'Завершить игру':  # "Хочешь выйти из игры? Ставим это же условие в цикле уровнем выше, чтобы..."
             break                                                         # ...выйти и из него тоже, т.е. из цикла игры
