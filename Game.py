@@ -35,6 +35,8 @@ def get_hints():
     keyboard.add_button('Звонок другу', color=VkKeyboardColor.POSITIVE)
     keyboard.add_line()
     keyboard.add_button('Помощь зала', color=VkKeyboardColor.POSITIVE)
+    keyboard.add_line()
+    keyboard.add_button('Не использовать', color=VkKeyboardColor.NEGATIVE)
     return keyboard.get_keyboard()
 
 
@@ -204,7 +206,7 @@ for event in Lslongpoll.listen():          # Инициируем цикл ра�
                         else:                                                         # "А попытки-то закончились!"
                             output_request('Вы уже воспользовались данной подсказкой!', None, get_menu(vars_to_out[0], vars_to_out[1], vars_to_out[2], vars_to_out[3]))   # "Хрен тебе, а не подсказка!))"
                             break
-                    if event.text == 'Звонок другу' or event.text[32:] == 'Звонок другу':
+                    elif event.text == 'Звонок другу' or event.text[32:] == 'Звонок другу':
                         if hint_b > 0:
                             hint_b -= 1  # Осталось {hint-1} попыток
                             hint_variants_b = []  # Инициируем/обнуляем список выводимых ответов, за исключением правильного
@@ -227,7 +229,7 @@ for event in Lslongpoll.listen():          # Инициируем цикл ра�
                         else:  # "А попытки-то закончились!"
                             output_request('Вы уже воспользовались данной подсказкой!', None, get_menu(vars_to_out[0], vars_to_out[1], vars_to_out[2], vars_to_out[3]))  # "Хрен тебе, а не подсказка!))"
                             break
-                    if event.text == 'Помощь зала' or event.text[32:] == 'Помощь зала':
+                    elif event.text == 'Помощь зала' or event.text[32:] == 'Помощь зала':
                         if hint_c > 0:
                             hint_c -= 1  # Осталось {hint-1} попыток
                             hint_variants_c = []
@@ -260,6 +262,9 @@ for event in Lslongpoll.listen():          # Инициируем цикл ра�
                         else:  # "А попытки-то закончились!"
                             output_request('Вы уже воспользовались данной подсказкой!', None, get_menu(vars_to_out[0], vars_to_out[1], vars_to_out[2], vars_to_out[3]))  # "Хрен тебе, а не подсказка!))"
                             break
+                    elif event.text == 'Не использовать' or event.text[32:] == 'Не использовать':
+                        output_request('OK!', None, get_menu(vars_to_out[0], vars_to_out[1], vars_to_out[2], vars_to_out[3]))
+                        break
           elif event.text == 'Забрать деньги' or event.text[32:] == 'Забрать деньги': # "Хочешь выйти из игры?"
             output_request(Lists.get_ans_commit(sum), None, VkKeyboard.get_empty_keyboard()) # Выводим сообщение о завершении игры и прячем клаву
             init_message(event.user_id)                                   # Выводим вступительное сообщение пользователю и в чаты (без клавы)
