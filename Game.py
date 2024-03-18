@@ -1,8 +1,10 @@
-import random, vk_api, secrets  # copy, vk, bs4, requests, os
+import random, vk_api, secrets, threading  # copy, vk, bs4, requests, os
 from vk_api.keyboard import VkKeyboard, VkKeyboardColor
 from vk_api.utils import get_random_id
 from vk_api.bot_longpoll import VkBotLongPoll  # VkBotEventType
 from vk_api.longpoll import VkLongPoll, VkEventType
+from multiprocessing import Process
+from threading import Thread
 from lists import Lists
 vk_session = vk_api.VkApi(token="vk1.a.CTTFMK9FAqi30OEbycat_ukNTOYp93w22GiV3CFaZodr6E1EWYTKN6nx7N-FZV1oDbm-1y9F20T1QD6oyXRiSKB9vsG9-Ui6jWde0DbwpsBMqXnzLtEyNAxdyAlSOm1hdVB0Ix5Mygxhh8my-nGW5dS063w3N60so2RJZPN43B6IJKPj6f0CpSe9e3uvE1iFVqzMaebofiB8OjrtaAJmHQ")
 longpoll = VkBotLongPoll(vk_session, 224992987)
@@ -120,11 +122,10 @@ def total(hints_a, hints_b, hints_c):
 
 print('Бот запущен')
 init_message(773548672) # Выводим вступительное сообщение пользователю 773548672 (я) и в чаты сообщества (без клавы)
+gamers = []
 
 # Работа
-for event in Lslongpoll.listen():          # Инициируем цикл работы бота
-  if event.type == VkEventType.MESSAGE_NEW and event.to_me and event.text:
-    if event.text == 'Игра':               # "Бот, давай поиграем!)"
+def work(event):
      output_request(Lists.all_greatings(user_name(event.user_id)), None, None)    # Бот приветствует тебя!
      output_request(f"Я буду задавать вопросы, на которые будут 4 варианта ответа.\nВыберите правильный ответ.\n\nВсего будет 15 вопросов и 3 подсказки.\nПогнали!", None, None)  # Выводим вступительные сообщения (см. def output request)
      right_answers_count = 0               # Счетчик правильных ответов
@@ -287,3 +288,16 @@ for event in Lslongpoll.listen():          # Инициируем цикл ра�
             del answers
             del vars_to_out
             break                                                         # ...выйти и из него тоже, т.е. из цикла игры
+
+
+for event in Lslongpoll.listen():          # Инициируем цикл работы бота
+  if event.type == VkEventType.MESSAGE_NEW and event.to_me and event.text:
+    if event.text == 'Игра':               # "Бот, давай поиграем!)"
+     if event.user_id not in gamers:
+         gamers.append(event.user_id)
+         print(gamers)
+         work(event)
+     else:
+         print(gamers)
+         work(event)
+         #continue
