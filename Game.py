@@ -43,10 +43,10 @@ def get_hints():
 
 
 # Вывод задания и вариантов ответа на кнопках
-def output_task(user_id, chat_id, message, random_id, a1, a2, a3, a4):
+def output_task(message, random_id, a1, a2, a3, a4):
     Lsvk.messages.send(
-        user_id=user_id,
-        chat_id=chat_id,
+        user_id=None,
+        chat_id=2,
         message=message,
         random_id=random_id,
         keyboard=get_menu(a1, a2, a3, a4),
@@ -55,26 +55,13 @@ def output_task(user_id, chat_id, message, random_id, a1, a2, a3, a4):
 # Вывод задания для пользователя и чата. Если пользователь не в беседе, задание не выводится.
 def task_handle(vk_event, enter_message, message, random_id, a1, a2, a3, a4):
     if vk_event.text == enter_message:
-        if vk_event.from_user:
-            return output_task(vk_event.user_id, None, message, random_id, a1, a2, a3, a4)
-        elif vk_event.from_chat:
-            return output_task(None, vk_event.chat_id, message, random_id, a1, a2, a3, a4)
+        return output_task(message, random_id, a1, a2, a3, a4)
 
 # Вывод ответа бота для пользователя и чата с возможностью использования стикера и клавиатуры. Если пользователь не в беседе, сообщение не выводится.
 def output_request(otvet, sticker, keyboard):
-    if event.from_user:
-        Lsvk.messages.send(
-         user_id=event.user_id,
-         chat_id=None,
-         message=otvet,
-         sticker_id=sticker,
-         random_id=get_random_id(),
-         keyboard=keyboard
-         )
-    if event.from_chat:
         Lsvk.messages.send(
          user_id=None,
-         chat_id=event.chat_id,
+         chat_id=2,
          message=otvet,
          sticker_id=sticker,
          random_id=get_random_id(),
@@ -82,21 +69,7 @@ def output_request(otvet, sticker, keyboard):
           )
 
 # Сообщения для пользователя user_id и для чатов(уже зашиты) в начале работы бота без клавы
-def init_message(user_id):
-    Lsvk.messages.send(
-        user_id=user_id,
-        chat_id=None,
-        message='"Игра" - войти в игру.',
-        random_id=get_random_id(),
-        keyboard=VkKeyboard.get_empty_keyboard(),
-        )
-    Lsvk.messages.send(
-        user_id=None,
-        chat_id=1,
-        message='"Игра" - войти в игру.',
-        random_id=get_random_id(),
-        keyboard=VkKeyboard.get_empty_keyboard(),
-        )
+def init_message():
     Lsvk.messages.send(
         user_id=None,
         chat_id=2,
@@ -118,10 +91,10 @@ def total(hints_a, hints_b, hints_c):
         output_request(random.choice(Lists.congratulations_80_100), None, None)
         output_request(None, random.choice(Lists.congrat_sticks_80_100), None)
     output_request(Lists.all_farewells(user_name(event.user_id)), None, None)
-    init_message(event.user_id)
+    init_message()
 
 print('Бот запущен')
-init_message(773548672) # Выводим вступительное сообщение пользователю 773548672 (я) и в чаты сообщества (без клавы)
+init_message() # Выводим вступительное сообщение пользователю 773548672 (я) и в чаты сообщества (без клавы)
 gamers = []
 
 # Работа
@@ -130,40 +103,38 @@ def work(event):
      output_request(f"Я буду задавать вопросы, на которые будут 4 варианта ответа.\nВыберите правильный ответ.\n\nВсего будет 15 вопросов и 3 подсказки.\nПогнали!", None, None)  # Выводим вступительные сообщения (см. def output request)
      right_answers_count = 0               # Счетчик правильных ответов
      questions_count = 0                   # Счетчик заданных вопросов (используется в выводе "Вопрос №_")
-     initq = []                            # Инициируем/обнуляем общий список вопросов
-     initq = initq + Lists.questions       # Подгружаем общий список вопросов (см. список questions в файле lists.py)
-     inita = []                            # Инициируем/обнуляем общий список вариантов ответов
-     inita = inita + Lists.answers         # Подгружаем список общий вариантов ответов(см. список answers в файле lists.py)
-     questions = []                        # Инициируем/обнуляем список из n вопросов (см. цикл for j in range(n))
-     answers = []                          # Инициируем/обнуляем список из n вариантов ответов (см. цикл for j in range(n))
-     for j in range(15):                   # Всего вопросов - 15
-      k = random.randrange(len(initq))     # В цикле: по случайному индексу k из общих списков вопросов и вариантов ответов выбираем случайные n штук (в общих списках вопросы соответствуют вариантам ответов), выбранное соответствие удаляется для избежания повторов
-      questions.append(initq[k])
-      answers.append(inita[k])
-      del initq[k]
-      del inita[k]
-      j += 1
-     del initq                             # Удаляем общий список вопросов без выбранных в игру
-     del inita                             # Удаляем общий список вариантов ответов без выбранных в игру
-     num_questions = len(questions)        # Количество вопросов в игре
-     hint_a = 1                              # Количество подсказок за игру (3)
+     questions = []                        # Инициируем/обнуляем список из n вопросов (n=15)
+     answers = []                          # Инициируем/обнуляем список из n вариантонв ответов (n=15)
+     for hard in range(3):                     # Всего 3 блока сложности по 5 вопросов
+         initq = []                            # Инициируем/обнуляем блок из 5 вопросов одного уровня сложности
+         initq = initq + Lists.questions[hard] # Подгружаем блок из общего списка вопросов
+         inita = []                            # Инициируем/обнуляем блок из 5 вариантонв ответов одного уровня сложности
+         inita = inita + Lists.answers[hard]   # Подгружаем Подгружаем блок из общего списка вопросов(см. список answers в файле lists.py)
+         for j in range(5):                    # Всего вопросов - 15 (3 блока по 5 вопросов)
+             k = random.randrange(len(initq))  # В цикле: по случайному индексу k из блоков вопросов и вариантов ответов выбираем случайные 5 штук (в общих списках вопросы соответствуют вариантам ответов), выбранное соответствие удаляется для избежания повторов
+             questions.append(initq[k])
+             answers.append(inita[k])
+             del initq[k]
+             del inita[k]
+             j += 1
+         del initq                             # Удаляем оставшиеся вопросы блока, не попавшие в игровой список
+         del inita                             # Удаляем оставшиеся варианты ответов блока, не попавшие в игровой список
+     hint_a = 1                            # Количество подсказок за игру (3)
      hint_b = 1
      hint_c = 1
      sum = 0                               # Количество выигранных денег (до начала игры - 0)
      while True:                           # Игра началась (инициируем цикл игры)
-        break_out_flag = False  # Если отвечаем неправильно, этот флаг становится True и происходит выход из цикла игры
+        break_out_flag = False             # Если отвечаем неправильно или забираем деньги, этот флаг становится True и происходит выход из цикла игры
         if is_empty(questions):            # Если закончились вопросы (список вопросов пуст - см. def is_empty()), то чистим за собой все оставшиеся списки и выводим итог (см. def total) и выходим из цикла игры
-            answers = []
             del vars_to_out
-            total(hint_a, hint_b, hint_c)                      # Выводим итог (см. def total)
+            total(hint_a, hint_b, hint_c)    # Выводим итог (см. def total)
             break
-        i = random.randrange(len(questions)) # Случайным образом выбираем номер соответствия (вопрос-варианты ответа) из 15 вопросов-вариантов ответов
         variants = []                        # Инициируем/обнуляем список ответов по номеру выбранного соответствия
-        variants = variants + answers[i]     # Подгружаем подсписок ответов по номеру выбранного соответствия
-        quest = questions[i]                 # Из списка из 15 вопросов выбираем вопрос по номеру выбранного соответствия
+        variants = variants + answers[0]     # Подгружаем подсписок ответов по очереди (всегда выбираем первый элемент)
+        quest = questions[0]                 # Из списка из 15 вопросов выбираем вопросы по очереди
         right = variants[0]                  # Правильный ответ всегда первый в подсписках ответов общего и игрового списков вариантов ответов. Записываем его в переменную
-        del questions[i]                     # Убираем выбранный вопрос соответствия
-        del answers[i]                       # Убираем выбранный подсписок ответов соответствия
+        del questions[0]                     # Убираем выбранный вопрос соответствия
+        del answers[0]                       # Убираем выбранный подсписок ответов соответствия
         del variants[0]                      # Убираем правильный ответ из подгруженного подсписка ответов соответствия
         vars_to_out = [right]                # Инициируем список выводимых вариантов ответов и записываем в него правильный ответ
         for other_vars in range(3):          # Дописываем в список выводимых вариантов ответов еще 3 ответа из подгруженного подсписка ответов соответствия (правилный ответ оттуда уже убран)
@@ -184,6 +155,8 @@ def work(event):
                 output_request(f"{random.choice(Lists.ans_right)}\nУ Вас первая несгораемая сумма в {sum} рублей.", None, None)
             elif sum == 100000:
                 output_request(f"{random.choice(Lists.ans_right)}\nУ Вас вторая несгораемая сумма в {sum} рублей.", None, None)
+            elif sum == 3000000:
+                output_request(f"{random.choice(Lists.ans_right)}\nПоздравляем! Вы выиграли главный приз в {sum} рублей!", None, None)
             else:
                 output_request(f"{random.choice(Lists.ans_right)}\nУ Вас {sum} рублей.", None, None)  # Выводим случайное одобрение (см. список ans_rigt в файле lists.py)
             break                                                         # Выходим из цикла ответа на вопрос
@@ -268,7 +241,7 @@ def work(event):
                         break
           elif event.text == 'Забрать деньги' or event.text[32:] == 'Забрать деньги': # "Хочешь выйти из игры?"
             output_request(Lists.get_ans_commit(sum), None, VkKeyboard.get_empty_keyboard()) # Выводим сообщение о завершении игры и прячем клаву
-            init_message(event.user_id)                                   # Выводим вступительное сообщение пользователю и в чаты (без клавы)
+            init_message()                                   # Выводим вступительное сообщение пользователю и в чаты (без клавы)
             break_out_flag = True
             break                                                         # Выходим из цикла ответа на вопрос
           elif event.text == '-' or event.text[32:] == '-':               # На убранный ответ не реагируем
@@ -276,7 +249,7 @@ def work(event):
           elif (event.text in [vars_to_out[0], vars_to_out[1], vars_to_out[2], vars_to_out[3]] and event.text != right) or (event.text[32:] in [vars_to_out[0], vars_to_out[1], vars_to_out[2], vars_to_out[3]] and event.text[32:] != right):
             sum = 0 if sum < 5000 else 5000 if 5000 <= sum < 100000 else 100000 if 100000 <= sum < 3000000 else 3000000    # Остается только та несгораемая сумма, до которой вы дошли
             output_request(f"{Lists.get_ans_wrong(right)}\nВы выиграли {sum} рублей.", None, None)    # "Осуждаю!"   (см. список осуждений ans_wrong из файла lists.py)
-            init_message(event.user_id)
+            init_message()
             break_out_flag = True
             break                                                         # Выходим из цикла ответа на вопрос
         if break_out_flag == True:  # "Хочешь выйти из игры? Ставим это же условие в цикле уровнем выше, чтобы..."
@@ -291,7 +264,7 @@ def work(event):
 
 
 for event in Lslongpoll.listen():          # Инициируем цикл работы бота
-  if event.type == VkEventType.MESSAGE_NEW and event.to_me and event.text:
+  if event.type == VkEventType.MESSAGE_NEW and event.to_me and event.chat_id == 2 and event.text:
     if event.text == 'Игра':               # "Бот, давай поиграем!)"
      if event.user_id not in gamers:
          gamers.append(event.user_id)
